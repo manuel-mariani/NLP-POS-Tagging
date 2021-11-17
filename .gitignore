@@ -1,0 +1,6 @@
+# Dataset folder
+dependency_treebank
+
+# Editor stuff
+.vscode
+.idea
