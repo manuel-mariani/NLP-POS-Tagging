@@ -4,3 +4,4 @@ dependency_treebank
 # Editor stuff
 .vscode
 .idea
+.DS_Store
