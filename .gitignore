@@ -5,3 +5,6 @@ dependency_treebank
 .vscode
 .idea
 .DS_Store
+
+# Outputs and artifacts
+vocab.json
