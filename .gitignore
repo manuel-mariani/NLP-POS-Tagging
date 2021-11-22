@@ -1,5 +1,6 @@
 # Dataset folder
 dependency_treebank
+glove_6b
 
 # Editor stuff
 .vscode
