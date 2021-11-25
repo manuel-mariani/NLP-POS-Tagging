@@ -6,6 +6,7 @@ glove
 .vscode
 .idea
 .DS_Store
+.ipynb_checkpoints
 
 # Outputs and artifacts
 vocab.json
