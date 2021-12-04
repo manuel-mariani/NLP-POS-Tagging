@@ -12,3 +12,4 @@ glove
 vocab.json
 wandb
 models
+classification_report_*.txt
