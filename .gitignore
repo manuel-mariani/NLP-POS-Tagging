@@ -11,3 +11,4 @@ glove
 # Outputs and artifacts
 vocab.json
 wandb
+models
