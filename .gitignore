@@ -9,7 +9,5 @@ glove
 .ipynb_checkpoints
 
 # Outputs and artifacts
-vocab.json
 wandb
 models
-classification_reports
