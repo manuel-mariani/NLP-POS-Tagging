@@ -1,0 +1,207 @@
+\documentclass[10pt]{article}
+\usepackage[english]{babel}
+\usepackage[a4paper, total={6.5in, 9in}]{geometry}
+\usepackage{cmbright}
+\usepackage{inconsolata}
+\usepackage[colorlinks=true]{hyperref}
+\usepackage{titling}
+\usepackage{multirow}
+\usepackage{subcaption}
+
+\setlength{\droptitle}{-60pt}
+\pagestyle{empty}
+
+\newcommand{\bilstm}{\texttt{BiLSTM-Dense}}
+\newcommand{\bigru}{\texttt{BiGRU-Dense}}
+\newcommand{\doublebilstm}{\texttt{2xBiLSTM-Dense}}
+\newcommand{\doubledense}{\texttt{BiLSTM-2xDense}}
+\newcommand{\fw}{\texttt{FW}}
+\newcommand{\uh}{\texttt{UH}}
+\newcommand{\pound}{\texttt{\#}}
+\newcommand{\nnps}{\texttt{NNPS}}
+\newcommand{\pdt}{\texttt{PDT}}
+\newcommand{\ls}{\texttt{LS}}
+\newcommand{\rbs}{\texttt{RBS}}
+\newcommand{\rbr}{\texttt{RBR}}
+\newcommand{\wpdollar}{\texttt{WP\$}}
+\newcommand{\nnp}{\texttt{NNP}}
+\newcommand{\dt}{\texttt{DT}}
+\newcommand{\cd}{\texttt{CD}}
+\newcommand{\nns}{\texttt{NNS}}
+\newcommand{\nn}{\texttt{NN}}
+\newcommand{\jj}{\texttt{JJ}}
+\newcommand{\jjr}{\texttt{JJR}}
+\newcommand{\jjs}{\texttt{JJS}}
+
+\title{
+POS Tagging\\
+\vspace{-10pt}
+\line(1,0){230}\\
+\large{Natural Language Processing Assignment}
+}
+\author{
+Francesco Ballerini\\
+\small{\texttt{francesco.ballerini3@studio.unibo.it}}
+\and
+Emmanuele Bollino\\
+\small{\texttt{emmanuele.bollino@studio.unibo.it}}
+\and
+Tommaso Giannuli\\
+\small{\texttt{tommaso.giannuli@studio.unibo.it}}
+\and
+Manuel Mariani\\
+\small{\texttt{manuel.mariani2@studio.unibo.it}}
+}
+
+\date{AY 2021--2022} 
+
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{abstract}
+We tackle part-of-speech tagging as a sequence labeling task performed by recurrent neural architectures. The models we test---some variations on a simple neural baseline---are all trained on a freely available sample of the Penn Treebank corpus and use GloVe-50 pre-trained embeddings. Our best model reaches an F1-macro score on the test set of 0.8.
+    
+\end{abstract}
+
+\section{Task}
+A \emph{part of speech} (POS) is a category of words or lexical items that have similar grammatical properties and display analogous syntactic behaviour---nouns, verbs, adjectives, adverbs, etc. \emph{Part-of-speech tagging} is the process of assigning to each word or symbol in a text the corresponding part of speech.
+
+We modeled this task by feeding single sentences to a recurrent neural architecture trained to produce in output the corresponding list of POS tags. The dataset on which our models were trained and tested is the 10\% sample of the 45 Penn Treebank corpus provided by the NLTK library.
+
+
+\section{Models}
+We tested the following recurrent neural architectures:
+\begin{itemize}
+    \item \bilstm: our baseline model, consisting of a bidirectional LSTM followed by a dense layer with softmax activation.
+    \item \bigru: bidirectional GRU followed by a dense layer with softmax activation.
+    \item \doublebilstm: a stack of two bidirectional LSTMs with a final Dense layer with softmax activation on top.
+    \item \doubledense: bidirectional LSTM followed by two dense layers, the first with ReLU and the second with softmax activation. The first dense layer has twice as many neurons as the second one.
+\end{itemize}
+
+Every input, before being fed to a model, goes through a non-trainable embedding layer storing GloVe-50 word embeddings. Out-of-vocabulary tokens are encoded by averaging the embeddings of all their left and right neighors throughout the dataset split they belong to. 
+
+All models share the same hyperparameters: 32 memory units for LSTM/GRU layers and 46 units (45 tags + 1 for padding) for the final Dense layers.
+
+Each model was trained with categorical cross-entropy as loss function and the Adam optimizer. Interactive plots of training history and summaries can be found on \href{https://wandb.ai/frantoman/NLP-POS-Tagging/reports/Model-Comparison-Training-Validation---VmlldzoxMjk0Nzc2}{WandB}. 
+
+
+\section{Results}
+Being some parts of speech intrinsically more common than others, our dataset naturally suffers from class imbalance. In an attempt to counteract this effect, we trained our models with both ``regular" and weighted cross-entropy as loss function, with each weight being inversely proportional to the frequency of its associated tag. However, as shown in Table \ref{tab:f1}, taking class imbalance into account did not provide any significant improvement in the F1-macro on the validation set; as a matter of fact, the best-scoring model was trained with no weights in the loss.
+
+When looking at the most misclassified tags in Table \ref{tab:tags}, some of them are, unsurprisingly, associated to uncommon parts of speech, such as \fw{} (foreign word), \ls{} (list item marker), \uh{} (interjection), and \pound{} (pound sign). Upon further inspection, we discovered that those tags do not appear in the test set at all, which might also explain why F1 scores on the test set are higher than those on the validation set in Table \ref{tab:f1}. 
+
+More interesting classification mistakes are those involving plural proper nouns (\nnps), which are often misclassified as plural common nouns (\nns). This is probably due to the fact that GloVe does not contain embeddings for capitalized words, and we therefore had to convert the whole dataset to lowercase before feeding it to the embedding layer; by doing so, however, we lost some information that might have been useful to discriminate between common and proper nouns---especially plural proper nouns, which are rarer than their singular counterparts and therefore harder to learn.
+
+\vspace{1cm}
+\begin{table}[h]
+\subcaptionbox{Unweighted loss and accuracy}{
+    \begin{tabular}{|c|c|}
+        \hline
+        \multirow{2}{*}{Model} & F1-macro\\
+        & (validation)\\
+        \hline
+        \bilstm & 0.74\\
+        \doublebilstm & 0.73\\
+        \bigru & 0.71\\
+        \doubledense & 0.71\\
+        \hline
+    \end{tabular}
+}
+\hfill
+\subcaptionbox{Weighted loss and accuracy}{
+    \begin{tabular}{|c|c|}
+        \hline
+        \multirow{2}{*}{Model} & F1-macro\\
+        & (validation)\\
+        \hline
+        \bigru & 0.73\\
+        \doubledense & 0.73\\
+        \bilstm & 0.69\\
+        \doublebilstm & 0.67\\
+        \hline
+    \end{tabular}
+}
+\subcaptionbox{Selected models (unweighted)}{
+        \begin{tabular}{|c|c|}
+        \hline
+        \multirow{2}{*}{Model} & F1-macro\\
+        & (test)\\
+        \hline
+        \bilstm & 0.80\\
+        \doublebilstm & 0.76\\
+        &\\
+        &\\
+        \hline
+    \end{tabular}
+}
+\caption{F1-macro scores on validation and test set. Each model was trained for 500 epochs and its weights saved through a callback when maximum validation accuracy was recorded. We then computed the F1-macro score on the test set for the best performing model on the validation set (\bilstm{} trained with unweighted loss) and the one immediately below it within the same category.}
+\label{tab:f1}
+\end{table}
+
+\vspace{1cm}
+\begin{table}[h]
+\subcaptionbox{\bilstm{} (validation)}{
+        \begin{tabular}{|c|c|}
+        \hline
+        Tag & Most pred.\ as \\
+        \hline
+        \fw & \nnp\\
+        \ls & \cd\\
+        \nnps & \nns\\
+        \pdt & \dt\\
+        \uh & \dt\\
+        \pound & \cd\\
+        \hline
+    \end{tabular}
+}
+\hfill
+\subcaptionbox{\doublebilstm{} (validation)}{
+    \begin{tabular}{|c|c|}
+        \hline
+        Tag & Most pred.\ as \\
+        \hline
+        \fw & \nnp\\
+        \ls & \nn\\
+        \nnps & \nns\\
+        \pdt & \dt\\
+        \uh & \dt\\
+        \pound & \pound\\
+        \hline
+    \end{tabular}
+}
+\hfill
+\subcaptionbox{\bilstm{} (test)}{
+        \begin{tabular}{|c|c|}
+        \hline
+        Tag & Most pred.\ as \\
+        \hline
+        \nnps & \nns\\
+        \pdt & \jj\\
+        \rbs & \jjs\\
+        &\\ &\\ &\\
+        \hline
+    \end{tabular}
+}
+\hfill
+\subcaptionbox{\doublebilstm{} (test)}{
+        \begin{tabular}{|c|c|}
+        \hline
+        Tag & Most pred.\ as \\
+        \hline
+        \nnps & \nns\\
+        \pdt & \jj\\
+        \rbr & \jjr\\
+        \rbs & \jjs\\
+        \wpdollar & \jj\\
+        &\\
+        \hline
+    \end{tabular}
+}
+\caption{Tags which get correctly predicted in less than 50\% of their occurrences and corresponding most frequent labeling mistake.}
+\label{tab:tags}
+\end{table}
+
+\end{document}
